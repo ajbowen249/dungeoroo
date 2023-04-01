@@ -1,6 +1,7 @@
 use yew::prelude::*;
 use gloo_timers::callback::Timeout;
 use crate::wfc::*;
+use crate::components::dungeon_cell_preview::*;
 use crate::components::dungeon_cell::*;
 use crate::generation_fields::dungeon::*;
 use web_sys::{EventTarget, HtmlInputElement};
@@ -15,6 +16,7 @@ pub enum Msg {
     SetPaint(DungeonCellType),
     SetCell(GridLocation),
     SeedInputChanged(u64),
+    ToggleIsRenderedMode,
 }
 
 
@@ -26,6 +28,7 @@ pub struct WFCDungeonSandbox {
     generator: DungeonGenerator,
     pub selected_set_cell_type: DungeonCellType,
     pub seed_string: String,
+    pub is_rendered_mode: bool,
 }
 
 fn new_generator() -> DungeonGenerator {
@@ -41,6 +44,7 @@ impl Component for WFCDungeonSandbox {
             generator: new_generator(),
             selected_set_cell_type: DungeonCellType::None,
             seed_string: String::from(""),
+            is_rendered_mode: false,
         };
 
         data.seed_string = data.generator.seed.to_string();
@@ -55,6 +59,7 @@ impl Component for WFCDungeonSandbox {
         let select_set_none = ctx.link().callback(|_| Msg::SetPaint(DungeonCellType::None));
         let select_set_hall = ctx.link().callback(|_| Msg::SetPaint(DungeonCellType::Hall(CellConnections::all())));
         let select_set_room = ctx.link().callback(|_| Msg::SetPaint(DungeonCellType::Room(CellConnections::all())));
+        let toggle_rendered = ctx.link().callback(|_| Msg::ToggleIsRenderedMode);
         let reset = ctx.link().callback(|_| Msg::Reset);
         let seed_changed = {
             let on_seed_changed = ctx.link().callback(|val: u64| Msg::SeedInputChanged(val));
@@ -93,8 +98,10 @@ impl Component for WFCDungeonSandbox {
                     <button disabled={can_do_more_work} onclick={reset}>{"Reset"}</button><br />
                     <div>{format!("State: {}", self.generator.debug_state())}</div>
                     <input type={"number"} min={0} value={self.seed_string.clone()} oninput={seed_changed} />
+                    <label for={"is_rendered_checkbox"}>{"Rendered"}</label>
+                    <input type={"checkbox"} id={"is_rendered_checkbox"} checked={self.is_rendered_mode} onclick={toggle_rendered} />
                 </div>
-                <div class={classes!("wfc-ds-grid")}>
+                <div class={classes!(if self.is_rendered_mode { "wfc-ds-grid-rendered" } else { "wfc-ds-grid-preview" }, "wfc-ds-grid" )}>
                 {
                     grid.iter().map(|row| {
                         // "odd" is even-numbered index since they start at 0
@@ -123,12 +130,21 @@ impl Component for WFCDungeonSandbox {
                                         <div class={classes!("wfc-ds-grid-cell-container")}>
                                             <div class={classes!("wfc-ds-grid-cell-container-outer")}>
                                                 <div onclick={set_cell} class={classes!("wfc-ds-grid-cell-container-inner")}>
-                                                    <DungeonCell ui_props={DungeonCellUIProps {
-                                                        possible_types: cell.borrow().possible_types.clone(),
-                                                        is_start_location: location == self.generator.start_location,
-                                                        is_goal_location: location == self.generator.goal_location,
-                                                        is_goal_entrance_location: location == self.generator.goal_entrance_location,
-                                                    }} />
+                                                    if self.is_rendered_mode {
+                                                        <DungeonCell ui_props={DungeonCellUIProps {
+                                                            possible_types: cell.borrow().possible_types.clone(),
+                                                            is_start_location: location == self.generator.start_location,
+                                                            is_goal_location: location == self.generator.goal_location,
+                                                            is_goal_entrance_location: location == self.generator.goal_entrance_location,
+                                                        }} />
+                                                    } else {
+                                                        <DungeonCellPreview ui_props={DungeonCellPreviewUIProps {
+                                                            possible_types: cell.borrow().possible_types.clone(),
+                                                            is_start_location: location == self.generator.start_location,
+                                                            is_goal_location: location == self.generator.goal_location,
+                                                            is_goal_entrance_location: location == self.generator.goal_entrance_location,
+                                                        }} />
+                                                    }
                                                 </div>
                                                 if cell_is_queued {
                                                     <div class={classes!("wfc-ds-grid-cell-container-flag")}>
@@ -185,6 +201,9 @@ impl Component for WFCDungeonSandbox {
             Msg::SeedInputChanged(seed) => {
                 self.generator.seed = seed;
                 self.seed_string = seed.to_string();
+            },
+            Msg::ToggleIsRenderedMode => {
+                self.is_rendered_mode = !self.is_rendered_mode;
             },
         };
 

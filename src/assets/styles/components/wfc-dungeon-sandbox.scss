@@ -1,30 +1,45 @@
 @use '../constants.scss' as *;
+@use './dungeon-cell-preview' as *;
 @use './dungeon-cell' as *;
 @use "sass:math";
 
 $basic-grid-margin: 2px;
 
+.wfc-ds-grid-rendered {
+    --diagonal-height: #{$dungeon-cell-diagonal-height};
+    --peak-height: #{$dungeon-cell-peak-height};
+    --half-width: #{$dungeon-cell-half-width};
+    --flat-width: #{$dungeon-cell-flat-width};
+}
+
+.wfc-ds-grid-preview {
+    --diagonal-height: #{$dungeon-cell-preview-diagonal-height};
+    --peak-height: #{$dungeon-cell-preview-peak-height};
+    --half-width: #{$dungeon-cell-preview-half-width};
+    --flat-width: #{$dungeon-cell-preview-flat-width};
+}
+
 .wfc-ds-grid {
     display: flex;
     flex-direction: column;
-    margin-top: $dungeon-cell-peak-height;
+    margin-top: var(--peak-height);
 }
 
 .wfc-ds-grid-row {
     display: flex;
     flex-direction: row;
-    height: $dungeon-cell-diagonal-height;
-    margin-top: calc(calc($dungeon-cell-peak-height * -1) + $basic-grid-margin);
+    height: var(--diagonal-height);
+    margin-top: calc(calc(var(--peak-height) * -1) + $basic-grid-margin);
 }
 
 .wfc-ds-grid-row-even {
-    margin-left: $dungeon-cell-half-width;
+    margin-left: var(--half-width);
 }
 
 .wfc-ds-grid-cell-container {
     margin-left: $basic-grid-margin;
-    width: $dungeon-cell-flat-width;
-    height: $dungeon-cell-diagonal-height;
+    width: var(--flat-width);
+    height: var(--diagonal-height);
 }
 
 .wfc-ds-grid-cell-container-outer {
@@ -40,8 +55,8 @@ $basic-grid-margin: 2px;
 
 .wfc-ds-grid-cell-container-flag {
     position: absolute;
-    padding-left: calc($dungeon-cell-flat-width * calc(2/5));
-    padding-top: calc($dungeon-cell-flat-width * calc(2/5));
+    padding-left: calc(var(--flat-width) * calc(2/5));
+    padding-top: calc(var(--flat-width) * calc(2/5));
     color: gold;
     font-weight: bold;
     pointer-events:none;

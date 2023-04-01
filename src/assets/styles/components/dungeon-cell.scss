@@ -3,7 +3,7 @@
 @use '../constants' as *;
 @use '../util' as *;
 
-$dungeon-cell-flat-width: 5rem;
+$dungeon-cell-flat-width: 10rem;
 $dungeon-cell-half-width: calc($dungeon-cell-flat-width / 2);
 $dungeon-cell-side-length: calc($dungeon-cell-flat-width / math.sqrt(3));
 $dungeon-cell-peak-height: calc(calc($dungeon-cell-half-width * 30)  /52);
