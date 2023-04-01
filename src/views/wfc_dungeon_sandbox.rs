@@ -168,7 +168,10 @@ impl Component for WFCDungeonSandbox {
             Msg::StepComplete => {
                 let requeue = ctx.link().callback(|_: ()| Msg::StepComplete);
 
-                self.generator.step();
+                for _ in 0..if self.generator.state == DungeonGeneratorState::Fill { 20 } else { 1 } {
+                    self.generator.step();
+                }
+
                 if self.generator.can_do_more_work() {
                     let timer = Timeout::new(1, move || {
                         requeue.emit(());

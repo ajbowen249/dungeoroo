@@ -239,7 +239,7 @@ pub struct DungeonRoom {
 }
 
 #[derive(Debug, Eq, Copy, Clone, PartialEq)]
-enum DungeonGeneratorState {
+pub enum DungeonGeneratorState {
     Init,
     PlacedRooms,
     ForgingPath,
@@ -261,7 +261,7 @@ pub struct DungeonGenerator {
     pub rows: usize,
     pub cols: usize,
     pub meander_factor: f64,
-    state: DungeonGeneratorState,
+    pub state: DungeonGeneratorState,
     random: Rnum,
     cursor_location: GridLocation,
     iteration_count: i32,
