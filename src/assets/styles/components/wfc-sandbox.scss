@@ -1,0 +1,48 @@
+@use '../constants.scss' as *;
+@use './basic-hex-cell' as *;
+@use "sass:math";
+
+$basic-grid-margin: 2px;
+
+.wfc-sandbox-hex-grid {
+    display: flex;
+    flex-direction: column;
+    margin-top: $basic-cell-peak-height;
+}
+
+.wfc-sandbox-grid-row {
+    display: flex;
+    flex-direction: row;
+    height: $basic-cell-diagonal-height;
+    margin-top: calc(calc($basic-cell-peak-height * -1) + $basic-grid-margin);
+}
+
+.wfc-sandbox-grid-row-even {
+    margin-left: $basic-cell-half-width;
+}
+
+.wfc-sandbox-grid-cell-container {
+    margin-left: $basic-grid-margin;
+    width: $basic-cell-flat-width;
+    height: $basic-cell-diagonal-height;
+}
+
+.wfc-sandbox-grid-cell-container-outer {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.wfc-sandbox-grid-cell-container-inner {
+    position: absolute;
+    width: 100%;
+}
+
+.wfc-sandbox-grid-cell-container-flag {
+    position: absolute;
+    padding-left: calc($basic-cell-flat-width * calc(2/5));
+    padding-top: calc($basic-cell-flat-width * calc(2/5));
+    color: gold;
+    font-weight: bold;
+    pointer-events:none;
+}

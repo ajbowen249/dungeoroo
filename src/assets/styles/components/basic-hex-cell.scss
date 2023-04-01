@@ -1,0 +1,47 @@
+@use '../constants.scss' as *;
+@use "sass:math";
+
+$basic-cell-flat-width: 2rem;
+$basic-cell-half-width: calc($basic-cell-flat-width / 2);
+$basic-cell-side-length: calc($basic-cell-flat-width / math.sqrt(3));
+$basic-cell-peak-height: calc(calc($basic-cell-half-width * 30)  /52);
+$basic-cell-diagonal-height: calc($basic-cell-side-length * 2);
+
+$default-color: black;
+
+.basic-hex-cell {
+    width: $basic-cell-flat-width;
+    height: $basic-cell-diagonal-height;
+}
+
+.basic-hex-cell-inner {
+    width: $basic-cell-flat-width;
+    // We need to account for the extra $basic-cell-peak-height of transparent border space above and below
+    display: flex;
+    flex-direction: column;
+}
+
+.basic-hex-cell-top {
+    width: 0;
+    border-left: $basic-cell-half-width solid transparent;
+    border-right: $basic-cell-half-width solid transparent;
+
+    border-bottom-width: $basic-cell-peak-height;
+    border-bottom-style: solid;
+    border-bottom-color: $default-color;
+}
+
+.basic-hex-cell-bottom {
+    width: 0;
+    border-left: $basic-cell-half-width solid transparent;
+    border-right: $basic-cell-half-width solid transparent;
+    border-top-width: $basic-cell-peak-height;
+    border-top-style: solid;
+    border-top-color: $default-color;
+}
+
+.basic-hex-cell-mid {
+    width: $basic-cell-flat-width;
+    height: $basic-cell-side-length;
+    background-color: $default-color;
+}
