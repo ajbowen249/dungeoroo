@@ -1,26 +1,16 @@
 @use "sass:math";
+@use "sass:map";
 
 @use '../constants' as *;
 @use '../util' as *;
 
-$dungeon-cell-preview-flat-width: 5rem;
-$dungeon-cell-preview-half-width: calc($dungeon-cell-preview-flat-width / 2);
-$dungeon-cell-preview-side-length: calc($dungeon-cell-preview-flat-width / math.sqrt(3));
-$dungeon-cell-preview-peak-height: calc(calc($dungeon-cell-preview-half-width * 30)  /52);
-$dungeon-cell-preview-diagonal-height: calc($dungeon-cell-preview-side-length * 2);
-
-@function to-svg-loc($number) {
-    @return calc(strip-unit($number) * 16);
-}
-
-$dungeon-cell-preview-outer-path-stroke: path(""
-    + " M#{to-svg-loc($dungeon-cell-preview-half-width)}, 0"
-    + " L#{to-svg-loc($dungeon-cell-preview-flat-width)}, #{to-svg-loc($dungeon-cell-preview-peak-height)}"
-    + " L#{to-svg-loc($dungeon-cell-preview-flat-width)}, #{to-svg-loc(calc($dungeon-cell-preview-peak-height + $dungeon-cell-preview-side-length))}"
-    + " L#{to-svg-loc($dungeon-cell-preview-half-width)}, #{to-svg-loc($dungeon-cell-preview-diagonal-height)}"
-    + " L0, #{to-svg-loc(calc($dungeon-cell-preview-peak-height + $dungeon-cell-preview-side-length))}"
-    + " L0, #{to-svg-loc($dungeon-cell-preview-peak-height)}"
-+ " Z");
+$dungeon-cell-preview-hex-props: generate-flat-side-hexagon(5rem);
+$dungeon-cell-preview-flat-width: map.get($dungeon-cell-preview-hex-props, "flat-width");
+$dungeon-cell-preview-half-width: map.get($dungeon-cell-preview-hex-props, "half-width");
+$dungeon-cell-preview-side-length: map.get($dungeon-cell-preview-hex-props, "side-length");
+$dungeon-cell-preview-peak-height: map.get($dungeon-cell-preview-hex-props, "peak-height");
+$dungeon-cell-preview-diagonal-height: map.get($dungeon-cell-preview-hex-props, "diagonal-height");
+$dungeon-cell-preview-outer-path-stroke: map.get($dungeon-cell-preview-hex-props, "outer-path-stroke");
 
 $default-color: black;
 

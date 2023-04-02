@@ -1,3 +1,5 @@
+@use "sass:math";
+
 /// Remove the unit of a length
 /// @param {Number} $number - Number to remove unit from
 /// @return {Number} - Unitless number
@@ -8,4 +10,32 @@
     }
 
     @return $number;
+}
+
+@function to-svg-loc($number) {
+    @return calc(strip-unit($number) * 16);
+}
+
+@function generate-flat-side-hexagon($size) {
+    $flat-width: $size;
+    $half-width: calc($flat-width / 2);
+    $side-length: calc($flat-width / math.sqrt(3));
+    $peak-height: calc(calc($half-width * 30) / 52);
+    $diagonal-height: calc($side-length * 2);
+
+    @return (
+        "flat-width": #{$flat-width},
+        "half-width": #{$half-width},
+        "side-length": #{$side-length},
+        "peak-height": #{$peak-height},
+        "diagonal-height": #{$diagonal-height},
+        "outer-path-stroke": path(""
+            + " M#{to-svg-loc($half-width)}, 0"
+            + " L#{to-svg-loc($flat-width)}, #{to-svg-loc($peak-height)}"
+            + " L#{to-svg-loc($flat-width)}, #{to-svg-loc(calc($peak-height + $side-length))}"
+            + " L#{to-svg-loc($half-width)}, #{to-svg-loc($diagonal-height)}"
+            + " L0, #{to-svg-loc(calc($peak-height + $side-length))}"
+            + " L0, #{to-svg-loc($peak-height)}"
+        + " Z"),
+    );
 }

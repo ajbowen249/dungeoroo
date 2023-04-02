@@ -85,7 +85,7 @@ impl Component for WFCDungeonSandbox {
 
         let queued_cell_locations = self.generator.wfc.get_queue();
         let can_do_more_work = self.generator.can_do_more_work();
-        let mut row_index = 0;
+        let mut p_row_index = 0;
 
         html! {
             <div>
@@ -103,76 +103,103 @@ impl Component for WFCDungeonSandbox {
                     <label for={"is_rendered_checkbox"}>{"Rendered"}</label>
                     <input type={"checkbox"} id={"is_rendered_checkbox"} checked={self.is_rendered_mode} onclick={toggle_rendered} />
                 </div>
-                <div class={classes!(if self.is_rendered_mode { "wfc-ds-grid-rendered" } else { "wfc-ds-grid-preview" }, "wfc-ds-grid" )}>
-                {
-                    grid.iter().map(|row| {
-                        // "odd" is even-numbered index since they start at 0
-                        let is_odd = row_index % 2 == 0;
+                if !self.is_rendered_mode {
+                    <div class={classes!("wfc-ds-preview-grid")}>
+                    {
+                        grid.iter().map(|row| {
+                            // "odd" is even-numbered index since they start at 0
+                            let is_odd = p_row_index % 2 == 0;
 
-                        let row_class = classes!(
-                            "wfc-ds-grid-row",
-                            if is_odd { "wfc-ds-grid-row-odd" } else { "wfc-ds-grid-row-even" }
-                        );
+                            let row_class = classes!(
+                                "wfc-ds-preview-grid-row",
+                                if is_odd { "wfc-ds-preview-grid-row-odd" } else { "wfc-ds-preview-grid-row-even" }
+                            );
 
-                        let mut col_index = 0;
+                            let mut col_index = 0;
 
-                        let html = html! {
-                            <div class={row_class}>
-                            {
-                                row.iter().map(|cell| {
-                                    let cell_is_queued = queued_cell_locations.iter().any(|loc| {
-                                        loc.row == row_index && loc.col == col_index
-                                    });
+                            let html = html! {
+                                <div class={row_class}>
+                                {
+                                    row.iter().map(|cell| {
+                                        let cell_is_queued = queued_cell_locations.iter().any(|loc| {
+                                            loc.row == p_row_index && loc.col == col_index
+                                        });
 
-                                    let location = GridLocation::new(row_index, col_index);
+                                        let location = GridLocation::new(p_row_index, col_index);
 
-                                    let set_cell = ctx.link().callback(move |_| Msg::SetCell(location));
+                                        let set_cell = ctx.link().callback(move |_| Msg::SetCell(location));
 
-                                    let ihtml = html! {
-                                        <div class={classes!("wfc-ds-grid-cell-container")}>
-                                            <div class={classes!("wfc-ds-grid-cell-container-outer")}>
-                                                <div onclick={set_cell} class={classes!("wfc-ds-grid-cell-container-inner")}>
-                                                    if self.is_rendered_mode {
-                                                        <div class={classes!("wfc-dungeon-sandbox-rendered-cell-container")}>
-                                                            <DungeonCell ui_props={DungeonCellUIProps {
+                                        let ihtml = html! {
+                                            <div class={classes!("wfc-ds-preview-grid-cell-container")}>
+                                                <div class={classes!("wfc-ds-preview-grid-cell-container-outer")}>
+                                                    <div onclick={set_cell} class={classes!("wfc-ds-preview-grid-cell-container-inner")}>
+                                                            <DungeonCellPreview ui_props={DungeonCellPreviewUIProps {
                                                                 possible_types: cell.borrow().possible_types.clone(),
                                                                 is_start_location: location == self.generator.start_location,
                                                                 is_goal_location: location == self.generator.goal_location,
                                                                 is_goal_entrance_location: location == self.generator.goal_entrance_location,
                                                             }} />
+                                                    </div>
+                                                    if cell_is_queued {
+                                                        <div class={classes!("wfc-ds-preview-grid-cell-container-flag")}>
+                                                            { "Q" }
                                                         </div>
-                                                    } else {
-                                                        <DungeonCellPreview ui_props={DungeonCellPreviewUIProps {
-                                                            possible_types: cell.borrow().possible_types.clone(),
-                                                            is_start_location: location == self.generator.start_location,
-                                                            is_goal_location: location == self.generator.goal_location,
-                                                            is_goal_entrance_location: location == self.generator.goal_entrance_location,
-                                                        }} />
                                                     }
                                                 </div>
-                                                if cell_is_queued {
-                                                    <div class={classes!("wfc-ds-grid-cell-container-flag")}>
-                                                        { "Q" }
-                                                    </div>
-                                                }
                                             </div>
-                                        </div>
-                                    };
+                                        };
 
-                                    col_index += 1;
+                                        col_index += 1;
 
-                                    ihtml
-                                }).collect::<Html>()
+                                        ihtml
+                                    }).collect::<Html>()
+                                }
+                                </div>
+                            };
+
+                            p_row_index += 1;
+
+                            html
+                        }).collect::<Html>()
+                    }
+                    </div>
+                } else {
+                    // I'm iterating the grid 90 degrees off, since the rendered hexagons need to go the other way around, and I don't want to refactor
+                    // everything for flat-bottom hexagons when I just got it working.
+
+                    // The leftmost cell of the last row is the upper left column. The last row going right is the first column going down.
+                    <div class={classes!("wfc-ds-rendered-grid")}>
+                    {
+                        (0..self.generator.rows).rev().map(|row_index| {
+                            let is_odd = row_index % 2 == 0;
+                            html! {
+                                <div class={classes!(
+                                    "wfc-ds-rendered-grid-column",
+                                    if is_odd { "" } else { "wfc-ds-rendered-grid-column-even" }
+                                    )}>
+                                {
+                                    (0..self.generator.cols).map(|col_index| {
+                                        let location = GridLocation::new(row_index as i64, col_index as i64);
+                                        let cell = self.generator.wfc.get_grid().get_cell(&location).unwrap();
+
+                                        html! {
+                                            <div class={classes!("wfc-dungeon-sandbox-rendered-cell-container")}>
+                                                <DungeonCell ui_props={DungeonCellUIProps {
+                                                    possible_types: cell.borrow().possible_types.clone(),
+                                                    is_start_location: location == self.generator.start_location,
+                                                    is_goal_location: location == self.generator.goal_location,
+                                                    is_goal_entrance_location: location == self.generator.goal_entrance_location,
+                                                }} />
+                                            </div>
+                                        }
+                                    }).collect::<Html>()
+                                }
+                                </div>
                             }
-                            </div>
-                        };
-
-                        row_index += 1;
-
-                        html
-                    }).collect::<Html>()
+                        }).collect::<Html>()
+                    }
+                    </div>
                 }
-                </div>
             </div>
         }
     }

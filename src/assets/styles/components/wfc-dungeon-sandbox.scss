@@ -5,61 +5,49 @@
 
 $basic-grid-margin: 2px;
 
-.wfc-ds-grid-rendered {
-    --diagonal-height: #{$dungeon-cell-long-width};
-    --peak-height: #{$dungeon-cell-peak-length};
-    --half-width: #{$dungeon-cell-half-height};
-    --flat-width: #{$dungeon-cell-flat-height};
-    --rot-angle: 30deg;
-    --margin-top-extra: 120rem;
-}
-
-.wfc-ds-grid-preview {
+.wfc-ds-preview-grid {
     --diagonal-height: #{$dungeon-cell-preview-diagonal-height};
     --peak-height: #{$dungeon-cell-preview-peak-height};
     --half-width: #{$dungeon-cell-preview-half-width};
     --flat-width: #{$dungeon-cell-preview-flat-width};
     --rot-angle: 0deg;
     --margin-top-extra: 0rem;
-}
 
-.wfc-ds-grid {
     display: flex;
     flex-direction: column;
-    width: 600rem;
+    width: calc(20 * 1280px);
     margin-top: calc(var(--peak-height) + var(--margin-top-extra));
-    transform: rotate(var(--rot-angle));
 }
 
-.wfc-ds-grid-row {
+.wfc-ds-preview-grid-row {
     display: flex;
     flex-direction: row;
     height: var(--diagonal-height);
     margin-top: calc(calc(var(--peak-height) * -1) + $basic-grid-margin);
 }
 
-.wfc-ds-grid-row-even {
+.wfc-ds-preview-grid-row-even {
     margin-left: var(--half-width);
 }
 
-.wfc-ds-grid-cell-container {
+.wfc-ds-preview-grid-cell-container {
     margin-left: $basic-grid-margin;
     width: var(--flat-width);
     height: var(--diagonal-height);
 }
 
-.wfc-ds-grid-cell-container-outer {
+.wfc-ds-preview-grid-cell-container-outer {
     position: relative;
     width: 100%;
     height: 100%;
 }
 
-.wfc-ds-grid-cell-container-inner {
+.wfc-ds-preview-grid-cell-container-inner {
     position: absolute;
     width: 100%;
 }
 
-.wfc-ds-grid-cell-container-flag {
+.wfc-ds-preview-grid-cell-container-flag {
     position: absolute;
     padding-left: calc(var(--flat-width) * calc(2/5));
     padding-top: calc(var(--flat-width) * calc(2/5));
@@ -68,6 +56,26 @@ $basic-grid-margin: 2px;
     pointer-events:none;
 }
 
+
+
+.wfc-ds-rendered-grid {
+    display: flex;
+    flex-direction: row;
+    width: calc(20 * 1280px);
+    height: calc(20 * 394px);
+}
+
+.wfc-ds-rendered-grid-column {
+    height: calc(20 * 394px);
+    display: flex;
+    flex-direction: column;
+
+    margin-left: calc($dungeon-cell-peak-length * -1);
+}
+
+.wfc-ds-rendered-grid-column-even {
+    margin-top: $dungeon-cell-half-height;
+}
+
 .wfc-dungeon-sandbox-rendered-cell-container {
-    transform: rotate(-30deg);
 }

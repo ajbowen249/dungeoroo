@@ -23,9 +23,106 @@ pub struct DungeonCellProps {
     pub ui_props: DungeonCellUIProps,
 }
 
+type CartesianPoint2D = (f64, f64);
+
+const CELL_WIDTH_PX: f64 = 1280.0;
+const CELL_HEIGHT_PX: f64 = 394.0;
+const UNIT_CUBE_ELEMENT_WIDTH: f64 = 128.0;
+const UNIT_CUBE_ELEMENT_HEIGHT: f64 = 132.0;
+
+const UNIT_CUBE_Z_PX: f64 = 68.0;
+const POSITIVE_X: CartesianPoint2D = (64.0, 32.0);
+const POSITIVE_Y: CartesianPoint2D = (POSITIVE_X.0 * -1.0, POSITIVE_X.1);
+
+/// Transforms 3D coordinates into a 2D location in the bounding box of the containing cell.
+/// (0, 0, 0) is 29px below the lower left of the cell element. This allows the iso grid to have easy alignment with the bounding hexagon. The left point of
+/// the cell-local hexagon is (3, 3, 0).
+/// Positive X is diagonally up right. Positive Y is diagonally up left. Z is up.
+fn volume_loc_to_cell_loc(x: f64, y: f64, z: f64) -> CartesianPoint2D {
+    let mut x2d: f64 = 0.0;
+    let mut y2d: f64 = CELL_HEIGHT_PX + 29.0;
+
+    x2d += x * POSITIVE_X.0;
+    y2d -= x * POSITIVE_X.1;
+
+    x2d += y * POSITIVE_Y.0;
+    y2d -= y * POSITIVE_Y.1;
+
+    y2d += z * UNIT_CUBE_Z_PX;
+
+    (x2d, y2d)
+}
+
+fn to_css_px(point: CartesianPoint2D) -> (String, String) {
+    (
+        format!("{}px", point.0),
+        format!("{}px", point.1),
+    )
+}
+
+fn unit_cube(bottom_left: &CartesianPoint2D) -> Html {
+    let offset_point = to_css_px((
+        bottom_left.0.floor(),
+        bottom_left.1 .floor(),
+    ));
+
+    html! {
+        <div
+            style={format!("margin-left: {}; margin-top: {};", offset_point.0, offset_point.1)}
+            class={classes!("dungeon-cell-unit-cube")}
+        >
+            <div class={classes!("dungeon-cell-unit-cube-inner")}>
+                <div class={classes!("dungeon-cell-unit-cube-top-face")}>
+                    <svg><path /></svg>
+                </div>
+                <div class={classes!("dungeon-cell-unit-cube-left-face")}>
+                    <svg><path /></svg>
+                </div>
+                <div class={classes!("dungeon-cell-unit-cube-right-face")}>
+                    <svg><path /></svg>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+fn get_outline_grid_floor() -> Vec<CartesianPoint2D>{
+    // The cube floor starts at (3, 3, -1), because cube coordinates are lower-left.
+    // The floor is the top of the cube.
+    vec![
+        // The rev()s here are the painter's algorithm
+        // Upper outline
+        // outer top
+        (0..4).rev().map(|loc| volume_loc_to_cell_loc(12.0 - (loc as f64), 0.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>(),
+        // inner top
+        (0..3).rev().map(|loc| volume_loc_to_cell_loc(11.0 - (loc as f64), 0.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>(),
+        // upper right
+        (-5..0).rev().map(|loc| volume_loc_to_cell_loc(12.0, loc as f64, -1.0)).collect::<Vec<CartesianPoint2D>>(),
+        // upper left
+        (3..9).rev().map(|loc| volume_loc_to_cell_loc(loc as f64, 3.0, -1.0)).collect::<Vec<CartesianPoint2D>>(),
+
+        // Lower outline
+        // lower right
+        (7..13).rev().map(|loc| volume_loc_to_cell_loc(loc as f64, -6.0, -1.0)).collect::<Vec<CartesianPoint2D>>(),
+        // lower left
+        (-2..3).rev().map(|loc| volume_loc_to_cell_loc(3.0, loc as f64, -1.0)).collect::<Vec<CartesianPoint2D>>(),
+        // inner bottom
+        (0..3).rev().map(|loc| volume_loc_to_cell_loc(6.0 - (loc as f64), -5.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>(),
+        // outer bottom
+        (0..4).rev().map(|loc| volume_loc_to_cell_loc(6.0 - (loc as f64), -6.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>(),
+        ].into_iter().flatten().collect::<Vec<CartesianPoint2D>>()
+}
+
 fn hall_cell(connections: &CellConnections) -> Html {
+    let cubes = get_outline_grid_floor().iter()
+        .map(|cube| unit_cube(cube))
+        .collect::<Vec<Html>>();
+
     html! {
         <div class={classes!("dungeon-cell-hall")}>
+            {
+                cubes
+            }
         </div>
     }
 }

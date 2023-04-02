@@ -1,25 +1,23 @@
 @use "sass:math";
+@use "sass:map";
 
 @use '../constants' as *;
 @use '../util' as *;
 
-$dungeon-cell-flat-height: 5rem;
+$dungeon-cell-long-width: 1280px;
+$dungeon-cell-flat-height: 394px;
 $dungeon-cell-half-height: calc($dungeon-cell-flat-height / 2);
-$dungeon-cell-side-length: calc($dungeon-cell-flat-height / math.sqrt(3));
-$dungeon-cell-peak-length: calc(calc($dungeon-cell-half-height * 30)  /52);
-$dungeon-cell-long-width: calc($dungeon-cell-side-length * 2);
-
-@function to-svg-loc($number) {
-    @return calc(strip-unit($number) * 16);
-}
+$dungeon-cell-peak-length: 382px;
 
 $dungeon-cell-outer-path-stroke: path(""
-    + " M#{to-svg-loc($dungeon-cell-peak-length)}, 0"
-    + " L#{calc(to-svg-loc($dungeon-cell-long-width) - to-svg-loc($dungeon-cell-peak-length))}, 0"
-    + " L#{to-svg-loc($dungeon-cell-long-width)}, #{calc(to-svg-loc($dungeon-cell-flat-height) / 2)}"
-    + " L#{calc(to-svg-loc($dungeon-cell-long-width) - to-svg-loc($dungeon-cell-peak-length))}, #{to-svg-loc($dungeon-cell-flat-height)}"
-    + " L#{to-svg-loc($dungeon-cell-peak-length)}, #{to-svg-loc($dungeon-cell-flat-height)}"
-    + " L0, #{calc(to-svg-loc($dungeon-cell-flat-height) / 2)}"
+    + " M0, 196"
+    + " L382, 0"
+    + " L897, 0"
+    + " L1279, 196"
+    + " L1279, 197"
+    + " L897, 393"
+    + " L382, 393"
+    + " M0, 199"
     + " Z");
 
 $default-color: black;
@@ -95,4 +93,114 @@ $default-color: black;
     z-index: 100001;
     pointer-events:none;
     color: red;
+}
+
+$ds-unit-cube-flat-width: 128px;
+$ds-unit-cube-diagonal-height: 132px;
+
+.dungeon-cell-unit-cube {
+    position: absolute;
+    width: $ds-unit-cube-flat-width;
+    height: $ds-unit-cube-diagonal-height;
+    clip-path: path(""
+        + " M0, 31"
+        + " L63, 0"
+        + " L64, 0"
+        + " L127, 31"
+        + " L127, 100"
+        + " L64, 131"
+        + " L63, 131"
+        + " L0, 100"
+    + " Z");
+}
+
+.dungeon-cell-unit-cube-inner {
+    position: relative;
+    width: $ds-unit-cube-flat-width;
+    height: $ds-unit-cube-diagonal-height;
+}
+
+.dungeon-cell-unit-cube-top-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: $ds-unit-cube-flat-width;
+    height: $ds-unit-cube-diagonal-height;
+
+    svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: $ds-unit-cube-flat-width;
+        height: $ds-unit-cube-diagonal-height;
+        path {
+            fill: #565656;
+            stroke: black;
+            stroke-width: 1px;
+            d: path(""
+                + " M0, 31"
+                + " L63, 0"
+                + " L64, 0"
+                + " L127, 31"
+                + " L127, 32"
+                + " L64, 63"
+                + " L64, 63"
+                + " L0, 32"
+                + " Z");
+        }
+    }
+}
+
+.dungeon-cell-unit-cube-left-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: $ds-unit-cube-flat-width;
+    height: $ds-unit-cube-diagonal-height;
+
+    svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: $ds-unit-cube-flat-width;
+        height: $ds-unit-cube-diagonal-height;
+        path {
+            fill: #424242;
+            stroke: black;
+            stroke-width: 1px;
+            d: path(""
+                + " M0, 32"
+                + " L63, 63"
+                + " L63, 131"
+                + " L0, 100"
+            + " Z");
+        }
+    }
+}
+
+.dungeon-cell-unit-cube-right-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: $ds-unit-cube-flat-width;
+    height: $ds-unit-cube-diagonal-height;
+
+    svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: $ds-unit-cube-flat-width;
+        height: $ds-unit-cube-diagonal-height;
+        path {
+            fill: #888888;
+            stroke: black;
+            stroke-width: 1px;
+            d: path(""
+                + " M127, 31"
+                + " L127, 100"
+                + " L64, 131"
+                + " L64, 63"
+            + " Z");
+        }
+    }
 }
