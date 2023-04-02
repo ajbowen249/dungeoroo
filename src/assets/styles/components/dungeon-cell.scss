@@ -3,30 +3,30 @@
 @use '../constants' as *;
 @use '../util' as *;
 
-$dungeon-cell-flat-width: 10rem;
-$dungeon-cell-half-width: calc($dungeon-cell-flat-width / 2);
-$dungeon-cell-side-length: calc($dungeon-cell-flat-width / math.sqrt(3));
-$dungeon-cell-peak-height: calc(calc($dungeon-cell-half-width * 30)  /52);
-$dungeon-cell-diagonal-height: calc($dungeon-cell-side-length * 2);
+$dungeon-cell-flat-height: 5rem;
+$dungeon-cell-half-height: calc($dungeon-cell-flat-height / 2);
+$dungeon-cell-side-length: calc($dungeon-cell-flat-height / math.sqrt(3));
+$dungeon-cell-peak-length: calc(calc($dungeon-cell-half-height * 30)  /52);
+$dungeon-cell-long-width: calc($dungeon-cell-side-length * 2);
 
 @function to-svg-loc($number) {
     @return calc(strip-unit($number) * 16);
 }
 
 $dungeon-cell-outer-path-stroke: path(""
-    + " M#{to-svg-loc($dungeon-cell-half-width)}, 0"
-    + " L#{to-svg-loc($dungeon-cell-flat-width)}, #{to-svg-loc($dungeon-cell-peak-height)}"
-    + " L#{to-svg-loc($dungeon-cell-flat-width)}, #{to-svg-loc(calc($dungeon-cell-peak-height + $dungeon-cell-side-length))}"
-    + " L#{to-svg-loc($dungeon-cell-half-width)}, #{to-svg-loc($dungeon-cell-diagonal-height)}"
-    + " L0, #{to-svg-loc(calc($dungeon-cell-peak-height + $dungeon-cell-side-length))}"
-    + " L0, #{to-svg-loc($dungeon-cell-peak-height)}"
-+ " Z");
+    + " M#{to-svg-loc($dungeon-cell-peak-length)}, 0"
+    + " L#{calc(to-svg-loc($dungeon-cell-long-width) - to-svg-loc($dungeon-cell-peak-length))}, 0"
+    + " L#{to-svg-loc($dungeon-cell-long-width)}, #{calc(to-svg-loc($dungeon-cell-flat-height) / 2)}"
+    + " L#{calc(to-svg-loc($dungeon-cell-long-width) - to-svg-loc($dungeon-cell-peak-length))}, #{to-svg-loc($dungeon-cell-flat-height)}"
+    + " L#{to-svg-loc($dungeon-cell-peak-length)}, #{to-svg-loc($dungeon-cell-flat-height)}"
+    + " L0, #{calc(to-svg-loc($dungeon-cell-flat-height) / 2)}"
+    + " Z");
 
 $default-color: black;
 
 .dungeon-cell {
-    width: $dungeon-cell-flat-width;
-    height: $dungeon-cell-diagonal-height;
+    width: $dungeon-cell-long-width;
+    height: $dungeon-cell-flat-height;
     background-color: black;
     clip-path: $dungeon-cell-outer-path-stroke;
 }
@@ -36,8 +36,8 @@ $default-color: black;
 }
 
 .dungeon-cell-svg {
-    width: $dungeon-cell-flat-width;
-    height: $dungeon-cell-diagonal-height;
+    height: $dungeon-cell-flat-height;
+    width: $dungeon-cell-long-width;
 }
 
 .dungeon-cell-outer-stroke-path {
@@ -45,105 +45,41 @@ $default-color: black;
 }
 
 .dungeon-cell-untouched {
-    width: $dungeon-cell-flat-width;
-    height: $dungeon-cell-diagonal-height;
+    height: $dungeon-cell-flat-height;
+    width: $dungeon-cell-long-width;
     background-color: purple;
 }
 
 .dungeon-cell-indeterminate {
-    width: $dungeon-cell-flat-width;
-    height: $dungeon-cell-diagonal-height;
+    height: $dungeon-cell-flat-height;
+    width: $dungeon-cell-long-width;
     background-color: purple;
 }
 
-.dungeon-cell-indeterminate-directions {
-    position: absolute;
-    top: 0;
-    left: calc($dungeon-cell-diagonal-height / 3);
-    right: calc($dungeon-cell-diagonal-height / 3);
-    bottom: calc($dungeon-cell-diagonal-height / 2);
-    background-color: rgb(255, 255, 0);
-    transform-origin: bottom;
-}
-
 .dungeon-cell-none {
-    width: $dungeon-cell-flat-width;
-    height: $dungeon-cell-diagonal-height;
+    height: $dungeon-cell-flat-height;
+    width: $dungeon-cell-long-width;
     background-color: gray;
 }
 
 .dungeon-cell-hall {
-    width: $dungeon-cell-flat-width;
-    height: $dungeon-cell-diagonal-height;
+    height: $dungeon-cell-flat-height;
+    width: $dungeon-cell-long-width;
     position: relative;
     background-color: darkcyan;
 }
 
-.dungeon-cell-hall-connection {
-    position: absolute;
-    top: 0;
-    left: calc($dungeon-cell-diagonal-height / 3.5);
-    right: calc($dungeon-cell-diagonal-height / 3.5);
-    bottom: calc($dungeon-cell-diagonal-height / 2);
-    background-color: red;
-    transform-origin: bottom;
-}
-
 .dungeon-cell-room {
-    width: $dungeon-cell-flat-width;
-    height: $dungeon-cell-diagonal-height;
+    width: $dungeon-cell-long-width;
+    height: $dungeon-cell-flat-height;
     background-color: blue;
-}
-
-.dungeon-cell-room-door {
-    position: absolute;
-    top: 0;
-    left: calc($dungeon-cell-diagonal-height / 3.5);
-    right: calc($dungeon-cell-diagonal-height / 3.5);
-    bottom: calc($dungeon-cell-diagonal-height * .85);
-    background-color: olive;
-    transform-origin: 50% 335%;
-}
-
-.dungeon-cell-rotate-top-left {
-    transform: rotate(-30deg);
-}
-
-.dungeon-cell-rotate-top-right {
-    transform: rotate(30deg);
-}
-
-.dungeon-cell-rotate-right {
-    transform: rotate(90deg);
-}
-
-.dungeon-cell-rotate-bottom-right {
-    transform: rotate(150deg);
-}
-
-.dungeon-cell-rotate-bottom-left {
-    transform: rotate(-150deg);
-}
-
-.dungeon-cell-rotate-left {
-    transform: rotate(-90deg);
-}
-
-.dungeon-cell-remaining-types {
-    font-size: 15pt;
-    position: absolute;
-    padding-left: calc($dungeon-cell-flat-width * calc(2/5));
-    padding-top: calc($dungeon-cell-flat-width * calc(2/5));
-    font-weight: bold;
-    z-index: 100000;
-    pointer-events:none;
 }
 
 .dungeon-cell-start-location {
     font-size: 15pt;
     position: absolute;
-    padding-left: calc($dungeon-cell-flat-width * calc(2/8));
-    padding-top: calc($dungeon-cell-flat-width * calc(2/8));
+    padding-left: calc($dungeon-cell-long-width * calc(2/8));
+    padding-top: calc($dungeon-cell-long-width * calc(2/8));
     font-weight: bold;
     z-index: 100001;
     pointer-events:none;
@@ -153,8 +89,8 @@ $default-color: black;
 .dungeon-cell-goal-location {
     font-size: 15pt;
     position: absolute;
-    padding-left: calc($dungeon-cell-flat-width * calc(2/8));
-    padding-top: calc($dungeon-cell-flat-width * calc(2/8));
+    padding-left: calc($dungeon-cell-long-width * calc(2/8));
+    padding-top: calc($dungeon-cell-long-width * calc(2/8));
     font-weight: bold;
     z-index: 100001;
     pointer-events:none;

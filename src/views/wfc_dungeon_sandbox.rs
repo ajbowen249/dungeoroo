@@ -32,7 +32,7 @@ pub struct WFCDungeonSandbox {
 }
 
 fn new_generator() -> DungeonGenerator {
-    DungeonGenerator::new(15, 20)
+    DungeonGenerator::new(15, 15)
 }
 
 impl Component for WFCDungeonSandbox {
@@ -44,10 +44,12 @@ impl Component for WFCDungeonSandbox {
             generator: new_generator(),
             selected_set_cell_type: DungeonCellType::None,
             seed_string: String::from(""),
-            is_rendered_mode: false,
+            is_rendered_mode: true,
         };
 
         data.seed_string = data.generator.seed.to_string();
+
+        data.generator.generate();
 
         data
     }
@@ -131,12 +133,14 @@ impl Component for WFCDungeonSandbox {
                                             <div class={classes!("wfc-ds-grid-cell-container-outer")}>
                                                 <div onclick={set_cell} class={classes!("wfc-ds-grid-cell-container-inner")}>
                                                     if self.is_rendered_mode {
-                                                        <DungeonCell ui_props={DungeonCellUIProps {
-                                                            possible_types: cell.borrow().possible_types.clone(),
-                                                            is_start_location: location == self.generator.start_location,
-                                                            is_goal_location: location == self.generator.goal_location,
-                                                            is_goal_entrance_location: location == self.generator.goal_entrance_location,
-                                                        }} />
+                                                        <div class={classes!("wfc-dungeon-sandbox-rendered-cell-container")}>
+                                                            <DungeonCell ui_props={DungeonCellUIProps {
+                                                                possible_types: cell.borrow().possible_types.clone(),
+                                                                is_start_location: location == self.generator.start_location,
+                                                                is_goal_location: location == self.generator.goal_location,
+                                                                is_goal_entrance_location: location == self.generator.goal_entrance_location,
+                                                            }} />
+                                                        </div>
                                                     } else {
                                                         <DungeonCellPreview ui_props={DungeonCellPreviewUIProps {
                                                             possible_types: cell.borrow().possible_types.clone(),

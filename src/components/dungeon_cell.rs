@@ -24,38 +24,22 @@ pub struct DungeonCellProps {
 }
 
 fn hall_cell(connections: &CellConnections) -> Html {
-    directional_cell(connections, "dungeon-cell-hall", "dungeon-cell-hall-connection")
+    html! {
+        <div class={classes!("dungeon-cell-hall")}>
+        </div>
+    }
 }
 
 fn room_cell(connections: &CellConnections) -> Html {
-    directional_cell(connections, "dungeon-cell-room", "dungeon-cell-room-door")
+    html! {
+        <div class={classes!("dungeon-cell-room")}>
+        </div>
+    }
 }
 
 fn indeterminate_cell(connections: &CellConnections) -> Html {
-    directional_cell(connections, "dungeon-cell-indeterminate", "dungeon-cell-indeterminate-directions")
-}
-
-fn directional_cell(connections: &CellConnections, main_class: &str, dir_class: &str) -> Html {
     html! {
-        <div class={format!("{}", main_class)}>
-        if connections.top_left {
-            <div class={format!("{} dungeon-cell-rotate-top-left", dir_class)}>{crate::util::HTML_NBSP}</div>
-        }
-        if connections.top_right {
-            <div class={format!("{} dungeon-cell-rotate-top-right", dir_class)}>{crate::util::HTML_NBSP}</div>
-        }
-        if connections.right {
-            <div class={format!("{} dungeon-cell-rotate-right", dir_class)}>{crate::util::HTML_NBSP}</div>
-        }
-        if connections.bottom_right {
-            <div class={format!("{} dungeon-cell-rotate-bottom-right", dir_class)}>{crate::util::HTML_NBSP}</div>
-        }
-        if connections.bottom_left {
-            <div class={format!("{} dungeon-cell-rotate-bottom-left", dir_class)}>{crate::util::HTML_NBSP}</div>
-        }
-        if connections.left {
-            <div class={format!("{} dungeon-cell-rotate-left", dir_class)}>{crate::util::HTML_NBSP}</div>
-        }
+        <div class={classes!("dungeon-cell-indeterminate")}>
         </div>
     }
 }
@@ -92,7 +76,6 @@ pub fn DungeonCell(props: &DungeonCellProps) -> Html {
 
     html! {
         <div class={outer_classes}>
-        if num_cell_types > 1 { <div class={"dungeon-cell-remaining-types"}>{num_cell_types}</div> }
         if props.ui_props.is_start_location { <div class={"dungeon-cell-start-location"}>{"S"}</div> }
         if props.ui_props.is_goal_location { <div class={"dungeon-cell-goal-location"}>{"G"}</div> }
         if props.ui_props.is_goal_entrance_location { <div class={"dungeon-cell-goal-location"}>{"GE"}</div> }
