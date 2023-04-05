@@ -60,7 +60,7 @@ fn to_css_px(point: CartesianPoint2D) -> (String, String) {
     )
 }
 
-fn unit_cube(bottom_left: &CartesianPoint2D) -> Html {
+fn unit_cube(bottom_left: &CartesianPoint2D, color: Option<&str>) -> Html {
     let offset_point = to_css_px((
         bottom_left.0.floor(),
         bottom_left.1 .floor(),
@@ -68,17 +68,22 @@ fn unit_cube(bottom_left: &CartesianPoint2D) -> Html {
 
     html! {
         <div
-            style={format!("margin-left: {}; margin-top: {};", offset_point.0, offset_point.1)}
+            style={format!(
+                "margin-left: {}; margin-top: {};{}",
+                offset_point.0,
+                offset_point.1,
+                match color { Some(color) => format!(" --color: {}", color), None => String::from("") }
+            )}
             class={classes!("dungeon-cell-unit-cube")}
         >
             <div class={classes!("dungeon-cell-unit-cube-inner")}>
-                <div class={classes!("dungeon-cell-unit-cube-top-face")}>
+                <div class={classes!("dungeon-cell-unit-cube-face", "dungeon-cell-unit-cube-top-face")}>
                     <svg><path /></svg>
                 </div>
-                <div class={classes!("dungeon-cell-unit-cube-left-face")}>
+                <div class={classes!("dungeon-cell-unit-cube-face", "dungeon-cell-unit-cube-left-face")}>
                     <svg><path /></svg>
                 </div>
-                <div class={classes!("dungeon-cell-unit-cube-right-face")}>
+                <div class={classes!("dungeon-cell-unit-cube-face", "dungeon-cell-unit-cube-right-face")}>
                     <svg><path /></svg>
                 </div>
             </div>
@@ -86,36 +91,68 @@ fn unit_cube(bottom_left: &CartesianPoint2D) -> Html {
     }
 }
 
-fn get_outline_grid_floor() -> Vec<CartesianPoint2D>{
-    // The cube floor starts at (3, 3, -1), because cube coordinates are lower-left.
-    // The floor is the top of the cube.
-    vec![
-        // The rev()s here are the painter's algorithm
-        // Upper outline
-        // outer top
-        (0..4).rev().map(|loc| volume_loc_to_cell_loc(12.0 - (loc as f64), 0.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>(),
-        // inner top
-        (0..3).rev().map(|loc| volume_loc_to_cell_loc(11.0 - (loc as f64), 0.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>(),
-        // upper right
-        (-5..0).rev().map(|loc| volume_loc_to_cell_loc(12.0, loc as f64, -1.0)).collect::<Vec<CartesianPoint2D>>(),
-        // upper left
-        (3..9).rev().map(|loc| volume_loc_to_cell_loc(loc as f64, 3.0, -1.0)).collect::<Vec<CartesianPoint2D>>(),
+// Edge of the outline of the local cell. So top left is as viewed, not taking into account the rotating underlying data.
+enum OutlineEdge {
+    TopLeft,
+    Top,
+    TopRight,
+    BottomRight,
+    Bottom,
+    BottomLeft,
+}
 
-        // Lower outline
-        // lower right
-        (7..13).rev().map(|loc| volume_loc_to_cell_loc(loc as f64, -6.0, -1.0)).collect::<Vec<CartesianPoint2D>>(),
-        // lower left
-        (-2..3).rev().map(|loc| volume_loc_to_cell_loc(3.0, loc as f64, -1.0)).collect::<Vec<CartesianPoint2D>>(),
-        // inner bottom
-        (0..3).rev().map(|loc| volume_loc_to_cell_loc(6.0 - (loc as f64), -5.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>(),
-        // outer bottom
-        (0..4).rev().map(|loc| volume_loc_to_cell_loc(6.0 - (loc as f64), -6.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>(),
-        ].into_iter().flatten().collect::<Vec<CartesianPoint2D>>()
+fn get_outline_edge_points(edge: OutlineEdge, z: f64) -> Vec<CartesianPoint2D> {
+    // The rev()s here are the painter's algorithm
+    match edge {
+        OutlineEdge::TopLeft => (3..9).rev().map(|loc| volume_loc_to_cell_loc(loc as f64, 3.0, z)).collect::<Vec<CartesianPoint2D>>(),
+        OutlineEdge::Top => {
+            vec![
+                // outer
+                (0..4).rev().map(|loc| volume_loc_to_cell_loc(12.0 - (loc as f64), 0.0 + (loc as f64), z)).collect::<Vec<CartesianPoint2D>>(),
+                // inner
+                (0..3).rev().map(|loc| volume_loc_to_cell_loc(11.0 - (loc as f64), 0.0 + (loc as f64), z)).collect::<Vec<CartesianPoint2D>>(),
+            ].into_iter().flatten().collect::<Vec<CartesianPoint2D>>()
+        },
+        OutlineEdge::TopRight => (-5..0).rev().map(|loc| volume_loc_to_cell_loc(12.0, loc as f64, z)).collect::<Vec<CartesianPoint2D>>(),
+        OutlineEdge::BottomRight => (7..13).rev().map(|loc| volume_loc_to_cell_loc(loc as f64, -6.0, z)).collect::<Vec<CartesianPoint2D>>(),
+        OutlineEdge::Bottom => {
+            vec![
+                // inner
+                (0..3).rev().map(|loc| volume_loc_to_cell_loc(6.0 - (loc as f64), -5.0 + (loc as f64), z)).collect::<Vec<CartesianPoint2D>>(),
+                // outer
+                (0..4).rev().map(|loc| volume_loc_to_cell_loc(6.0 - (loc as f64), -6.0 + (loc as f64), z)).collect::<Vec<CartesianPoint2D>>(),
+            ].into_iter().flatten().collect::<Vec<CartesianPoint2D>>()
+        },
+        OutlineEdge::BottomLeft => (-2..3).rev().map(|loc| volume_loc_to_cell_loc(3.0, loc as f64, z)).collect::<Vec<CartesianPoint2D>>(),
+    }
+}
+
+fn get_hex_grid_floor(is_filled: bool) -> Vec<CartesianPoint2D> {
+    vec![
+        get_outline_edge_points(OutlineEdge::Top, -1.0),
+        get_outline_edge_points(OutlineEdge::TopRight, -1.0),
+        get_outline_edge_points(OutlineEdge::TopLeft, -1.0),
+
+        // Fill Spans
+        (if is_filled { (0..4).rev().map(|loc| volume_loc_to_cell_loc(11.0 - (loc as f64), -1.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>() } else { vec![]} ),
+        (if is_filled { (0..5).rev().map(|loc| volume_loc_to_cell_loc(11.0 - (loc as f64), -2.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>() } else { vec![]} ),
+        (if is_filled { (0..6).rev().map(|loc| volume_loc_to_cell_loc(11.0 - (loc as f64), -3.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>() } else { vec![]} ),
+        (if is_filled { (0..7).rev().map(|loc| volume_loc_to_cell_loc(11.0 - (loc as f64), -4.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>() } else { vec![]} ),
+        (if is_filled { (0..8).rev().map(|loc| volume_loc_to_cell_loc(11.0 - (loc as f64), -5.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>() } else { vec![]} ),
+        (if is_filled { (0..7).rev().map(|loc| volume_loc_to_cell_loc(10.0 - (loc as f64), -5.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>() } else { vec![]} ),
+        (if is_filled { (0..6).rev().map(|loc| volume_loc_to_cell_loc( 9.0 - (loc as f64), -5.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>() } else { vec![]} ),
+        (if is_filled { (0..5).rev().map(|loc| volume_loc_to_cell_loc( 8.0 - (loc as f64), -5.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>() } else { vec![]} ),
+        (if is_filled { (0..4).rev().map(|loc| volume_loc_to_cell_loc( 7.0 - (loc as f64), -5.0 + (loc as f64), -1.0)).collect::<Vec<CartesianPoint2D>>() } else { vec![]} ),
+
+        get_outline_edge_points(OutlineEdge::BottomRight, -1.0),
+        get_outline_edge_points(OutlineEdge::BottomLeft, -1.0),
+        get_outline_edge_points(OutlineEdge::Bottom, -1.0),
+    ].into_iter().flatten().collect::<Vec<CartesianPoint2D>>()
 }
 
 fn hall_cell(connections: &CellConnections) -> Html {
-    let cubes = get_outline_grid_floor().iter()
-        .map(|cube| unit_cube(cube))
+    let cubes = get_hex_grid_floor(true).iter()
+        .map(|cube| unit_cube(cube, Some("darkcyan")))
         .collect::<Vec<Html>>();
 
     html! {
@@ -128,8 +165,15 @@ fn hall_cell(connections: &CellConnections) -> Html {
 }
 
 fn room_cell(connections: &CellConnections) -> Html {
+    let cubes = get_hex_grid_floor(true).iter()
+        .map(|cube| unit_cube(cube, Some("blue")))
+        .collect::<Vec<Html>>();
+
     html! {
-        <div class={classes!("dungeon-cell-room")}>
+        <div class={classes!("dungeon-cell-hall")}>
+            {
+                cubes
+            }
         </div>
     }
 }

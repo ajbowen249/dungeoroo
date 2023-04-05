@@ -1,5 +1,6 @@
 @use "sass:math";
 @use "sass:map";
+@use "sass:color";
 
 @use '../constants' as *;
 @use '../util' as *;
@@ -64,7 +65,6 @@ $default-color: black;
     height: $dungeon-cell-flat-height;
     width: $dungeon-cell-long-width;
     position: relative;
-    background-color: darkcyan;
 }
 
 .dungeon-cell-room {
@@ -99,6 +99,8 @@ $ds-unit-cube-flat-width: 128px;
 $ds-unit-cube-diagonal-height: 132px;
 
 .dungeon-cell-unit-cube {
+    --color: #888888;
+
     position: absolute;
     width: $ds-unit-cube-flat-width;
     height: $ds-unit-cube-diagonal-height;
@@ -120,7 +122,7 @@ $ds-unit-cube-diagonal-height: 132px;
     height: $ds-unit-cube-diagonal-height;
 }
 
-.dungeon-cell-unit-cube-top-face {
+.dungeon-cell-unit-cube-face {
     position: absolute;
     top: 0;
     left: 0;
@@ -133,10 +135,16 @@ $ds-unit-cube-diagonal-height: 132px;
         left: 0;
         width: $ds-unit-cube-flat-width;
         height: $ds-unit-cube-diagonal-height;
+        stroke: black;
+        stroke-width: 1px;
+        fill: var(--color);
+    }
+}
+
+.dungeon-cell-unit-cube-top-face {
+    svg {
         path {
-            fill: #565656;
-            stroke: black;
-            stroke-width: 1px;
+            filter: brightness(63%);
             d: path(""
                 + " M0, 31"
                 + " L63, 0"
@@ -152,22 +160,9 @@ $ds-unit-cube-diagonal-height: 132px;
 }
 
 .dungeon-cell-unit-cube-left-face {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: $ds-unit-cube-flat-width;
-    height: $ds-unit-cube-diagonal-height;
-
     svg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: $ds-unit-cube-flat-width;
-        height: $ds-unit-cube-diagonal-height;
         path {
-            fill: #424242;
-            stroke: black;
-            stroke-width: 1px;
+            filter: brightness(49%);
             d: path(""
                 + " M0, 32"
                 + " L63, 63"
@@ -179,22 +174,8 @@ $ds-unit-cube-diagonal-height: 132px;
 }
 
 .dungeon-cell-unit-cube-right-face {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: $ds-unit-cube-flat-width;
-    height: $ds-unit-cube-diagonal-height;
-
     svg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: $ds-unit-cube-flat-width;
-        height: $ds-unit-cube-diagonal-height;
         path {
-            fill: #888888;
-            stroke: black;
-            stroke-width: 1px;
             d: path(""
                 + " M127, 31"
                 + " L127, 100"
