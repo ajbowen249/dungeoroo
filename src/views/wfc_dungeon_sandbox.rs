@@ -168,9 +168,11 @@ impl Component for WFCDungeonSandbox {
                     // everything for flat-bottom hexagons when I just got it working.
 
                     // The leftmost cell of the last row is the upper left column. The last row going right is the first column going down.
+
+                    // This still isn't quite 100% correct. Right-to-left is correct, but we need top-to-bottom as well
                     <div class={classes!("wfc-ds-rendered-grid")}>
                     {
-                        (0..self.generator.rows).rev().map(|row_index| {
+                        (0..self.generator.rows).map(|row_index| {
                             let is_odd = row_index % 2 == 0;
                             html! {
                                 <div class={classes!(

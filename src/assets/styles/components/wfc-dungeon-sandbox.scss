@@ -60,7 +60,7 @@ $basic-grid-margin: 2px;
 
 .wfc-ds-rendered-grid {
     display: flex;
-    flex-direction: row;
+    flex-direction: row-reverse;
     width: calc(20 * 1280px);
     height: calc(20 * 394px);
 }

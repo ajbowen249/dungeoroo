@@ -40,7 +40,7 @@ const POSITIVE_Y: CartesianPoint2D = (POSITIVE_X.0 * -1.0, POSITIVE_X.1);
 /// Positive X is diagonally up right. Positive Y is diagonally up left. Z is up.
 fn volume_loc_to_cell_loc(x: f64, y: f64, z: f64) -> CartesianPoint2D {
     let mut x2d: f64 = 0.0;
-    let mut y2d: f64 = CELL_HEIGHT_PX + 29.0;
+    let mut y2d: f64 = CELL_HEIGHT_PX + 29.0 - UNIT_CUBE_Z_PX;
 
     x2d += x * POSITIVE_X.0;
     y2d -= x * POSITIVE_X.1;
@@ -101,6 +101,18 @@ enum OutlineEdge {
     BottomLeft,
 }
 
+fn connection_index_to_rendered_edge(index: usize) -> OutlineEdge {
+    match index {
+        0 => OutlineEdge::TopRight, // (old top left)
+        1 => OutlineEdge::BottomRight, // (old top right)
+        2 => OutlineEdge::Bottom, // (old right)
+        3 => OutlineEdge::BottomLeft, // (old bottom right)
+        4 => OutlineEdge::TopLeft, // (old bottom left)
+        5 => OutlineEdge::Top, // (old left)
+        _ => panic!("Invalid edge index"),
+    }
+}
+
 fn get_outline_edge_points(edge: OutlineEdge, z: f64) -> Vec<CartesianPoint2D> {
     // The rev()s here are the painter's algorithm
     match edge {
@@ -151,15 +163,37 @@ fn get_hex_grid_floor(is_filled: bool) -> Vec<CartesianPoint2D> {
 }
 
 fn hall_cell(connections: &CellConnections) -> Html {
-    let cubes = get_hex_grid_floor(true).iter()
+    let connections_vec = connections.to_vec();
+    let connection_walls = (0..6).map(|non_connecting_index| { vec![
+        (non_connecting_index, get_outline_edge_points(connection_index_to_rendered_edge(non_connecting_index), -3.0)),
+        (non_connecting_index, get_outline_edge_points(connection_index_to_rendered_edge(non_connecting_index), -2.0)),
+    ]}).into_iter().flatten().collect::<Vec<(usize, Vec<CartesianPoint2D>)>>();
+
+    // Painter's order
+    let non_connecting_walls = vec![
+        connection_walls[5].clone(),
+        connection_walls[4].clone(),
+        connection_walls[0].clone(),
+        connection_walls[1].clone(),
+        connection_walls[3].clone(),
+        connection_walls[2].clone(),
+    ].into_iter()
+        .filter(|wall| !connections_vec[wall.0])
+        .map(|wall| wall.1)
+        .collect::<Vec<Vec<CartesianPoint2D>>>();
+
+    let floor_cubes = get_hex_grid_floor(true).iter()
         .map(|cube| unit_cube(cube, Some("darkcyan")))
+        .collect::<Vec<Html>>();
+
+    let wall_cubes = non_connecting_walls.iter().flatten()
+        .map(|cube| unit_cube(cube, None))
         .collect::<Vec<Html>>();
 
     html! {
         <div class={classes!("dungeon-cell-hall")}>
-            {
-                cubes
-            }
+            {floor_cubes}
+            {wall_cubes}
         </div>
     }
 }

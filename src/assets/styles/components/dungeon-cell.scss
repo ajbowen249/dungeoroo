@@ -26,8 +26,8 @@ $default-color: black;
 .dungeon-cell {
     width: $dungeon-cell-long-width;
     height: $dungeon-cell-flat-height;
-    background-color: black;
-    clip-path: $dungeon-cell-outer-path-stroke;
+    background-color: transparent;
+    // clip-path: $dungeon-cell-outer-path-stroke;
 }
 
 .dungeon-cell-invalid {
