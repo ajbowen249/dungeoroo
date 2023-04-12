@@ -59,6 +59,7 @@ dependencies = [
  "gloo-timers",
  "lazy_static",
  "ran",
+ "serde",
  "wasm-bindgen",
  "web-sys",
  "yew",

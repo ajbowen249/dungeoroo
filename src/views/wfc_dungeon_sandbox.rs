@@ -1,11 +1,15 @@
-use yew::prelude::*;
-use gloo_timers::callback::Timeout;
-use crate::wfc::*;
-use crate::components::dungeon_cell_preview::*;
 use crate::components::dungeon_cell::*;
+use crate::components::dungeon_cell_preview::*;
 use crate::generation_fields::dungeon::*;
-use web_sys::{EventTarget, HtmlInputElement};
+use crate::wfc::*;
+use gloo_console::log;
+use gloo_timers::callback::Timeout;
+use serde::{Deserialize, Serialize};
+use std::f64;
+use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use web_sys::{CanvasRenderingContext2d, EventTarget, HtmlInputElement};
+use yew::prelude::*;
 
 pub enum Msg {
     None,
@@ -17,12 +21,11 @@ pub enum Msg {
     SetCell(GridLocation),
     SeedInputChanged(u64),
     ToggleIsRenderedMode,
+    RenderToCanvas,
 }
-
 
 #[derive(PartialEq, Properties)]
-pub struct WFCSandboxProps {
-}
+pub struct WFCSandboxProps {}
 
 pub struct WFCDungeonSandbox {
     generator: DungeonGenerator,
@@ -34,6 +37,9 @@ pub struct WFCDungeonSandbox {
 fn new_generator() -> DungeonGenerator {
     DungeonGenerator::new(15, 15)
 }
+
+const CANVAS_WIDTH: f64 = 1280.0;
+const CANVAS_HEIGHT: f64 = 394.0;
 
 impl Component for WFCDungeonSandbox {
     type Message = Msg;
@@ -58,9 +64,15 @@ impl Component for WFCDungeonSandbox {
         let step = ctx.link().callback(|_| Msg::Step);
         let step_complete = ctx.link().callback(|_| Msg::StepComplete);
         let generate_instant = ctx.link().callback(|_| Msg::GenerateInstant);
-        let select_set_none = ctx.link().callback(|_| Msg::SetPaint(DungeonCellType::None));
-        let select_set_hall = ctx.link().callback(|_| Msg::SetPaint(DungeonCellType::Hall(CellConnections::all())));
-        let select_set_room = ctx.link().callback(|_| Msg::SetPaint(DungeonCellType::Room(CellConnections::all())));
+        let select_set_none = ctx
+            .link()
+            .callback(|_| Msg::SetPaint(DungeonCellType::None));
+        let select_set_hall = ctx
+            .link()
+            .callback(|_| Msg::SetPaint(DungeonCellType::Hall(CellConnections::all())));
+        let select_set_room = ctx
+            .link()
+            .callback(|_| Msg::SetPaint(DungeonCellType::Room(CellConnections::all())));
         let toggle_rendered = ctx.link().callback(|_| Msg::ToggleIsRenderedMode);
         let reset = ctx.link().callback(|_| Msg::Reset);
         let seed_changed = {
@@ -86,6 +98,14 @@ impl Component for WFCDungeonSandbox {
         let queued_cell_locations = self.generator.wfc.get_queue();
         let can_do_more_work = self.generator.can_do_more_work();
         let mut p_row_index = 0;
+
+        if self.is_rendered_mode {
+            let render_to_canvas = ctx.link().callback(|_: ()| Msg::RenderToCanvas);
+            let timer = Timeout::new(1, move || {
+                render_to_canvas.emit(());
+            });
+            timer.forget();
+        }
 
         html! {
             <div>
@@ -164,42 +184,8 @@ impl Component for WFCDungeonSandbox {
                     }
                     </div>
                 } else {
-                    // I'm iterating the grid 90 degrees off, since the rendered hexagons need to go the other way around, and I don't want to refactor
-                    // everything for flat-bottom hexagons when I just got it working.
-
-                    // The leftmost cell of the last row is the upper left column. The last row going right is the first column going down.
-
-                    // This still isn't quite 100% correct. Right-to-left is correct, but we need top-to-bottom as well
-                    <div class={classes!("wfc-ds-rendered-grid")}>
-                    {
-                        (0..self.generator.rows).map(|row_index| {
-                            let is_odd = row_index % 2 == 0;
-                            html! {
-                                <div class={classes!(
-                                    "wfc-ds-rendered-grid-column",
-                                    if is_odd { "" } else { "wfc-ds-rendered-grid-column-even" }
-                                    )}>
-                                {
-                                    (0..self.generator.cols).map(|col_index| {
-                                        let location = GridLocation::new(row_index as i64, col_index as i64);
-                                        let cell = self.generator.wfc.get_grid().get_cell(&location).unwrap();
-
-                                        html! {
-                                            <div class={classes!("wfc-dungeon-sandbox-rendered-cell-container")}>
-                                                <DungeonCell ui_props={DungeonCellUIProps {
-                                                    possible_types: cell.borrow().possible_types.clone(),
-                                                    is_start_location: location == self.generator.start_location,
-                                                    is_goal_location: location == self.generator.goal_location,
-                                                    is_goal_entrance_location: location == self.generator.goal_entrance_location,
-                                                }} />
-                                            </div>
-                                        }
-                                    }).collect::<Html>()
-                                }
-                                </div>
-                            }
-                        }).collect::<Html>()
-                    }
+                    <div class={classes!("wfc-ds-canvas-container")}>
+                        <canvas id={"canvas"} width={format!("{}px", CANVAS_WIDTH)} height={format!("{}px", CANVAS_HEIGHT)} class={classes!("wfc-ds-canvas")} />
                     </div>
                 }
             </div>
@@ -208,16 +194,20 @@ impl Component for WFCDungeonSandbox {
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::None => {},
+            Msg::None => {}
             Msg::Reset => {
                 self.generator = new_generator();
                 self.generator.seed = self.seed_string.parse::<u64>().unwrap();
-            },
+            }
             Msg::Step => self.generator.step(),
             Msg::StepComplete => {
                 let requeue = ctx.link().callback(|_: ()| Msg::StepComplete);
 
-                for _ in 0..if self.generator.state == DungeonGeneratorState::Fill { 20 } else { 1 } {
+                for _ in 0..if self.generator.state == DungeonGeneratorState::Fill {
+                    20
+                } else {
+                    1
+                } {
                     self.generator.step();
                 }
 
@@ -227,19 +217,110 @@ impl Component for WFCDungeonSandbox {
                     });
                     timer.forget();
                 }
-            },
+            }
             Msg::GenerateInstant => self.generator.generate(),
             Msg::SetPaint(cell_type) => self.selected_set_cell_type = cell_type,
-            Msg::SetCell(location) => self.generator.wfc.apply_types(vec![(location, vec![self.selected_set_cell_type])]),
+            Msg::SetCell(location) => self
+                .generator
+                .wfc
+                .apply_types(vec![(location, vec![self.selected_set_cell_type])]),
             Msg::SeedInputChanged(seed) => {
                 self.generator.seed = seed;
                 self.seed_string = seed.to_string();
-            },
+            }
             Msg::ToggleIsRenderedMode => {
                 self.is_rendered_mode = !self.is_rendered_mode;
-            },
+            }
+            Msg::RenderToCanvas => {
+                log!("render request");
+                let document = web_sys::window().unwrap().document().unwrap();
+                let canvas = document.get_element_by_id("canvas").unwrap();
+                let canvas: web_sys::HtmlCanvasElement = canvas
+                    .dyn_into::<web_sys::HtmlCanvasElement>()
+                    .map_err(|_| ())
+                    .unwrap();
+
+                let context = canvas
+                    .get_context("2d")
+                    .unwrap()
+                    .unwrap()
+                    .dyn_into::<web_sys::CanvasRenderingContext2d>()
+                    .unwrap();
+
+                // context.begin_path();
+
+                // // Draw the outer circle.
+                // context
+                //     .arc(75.0, 75.0, 50.0, 0.0, f64::consts::PI * 2.0)
+                //     .unwrap();
+
+                // // Draw the mouth.
+                // context.move_to(110.0, 75.0);
+                // context.arc(75.0, 75.0, 35.0, 0.0, f64::consts::PI).unwrap();
+
+                // // Draw the left eye.
+                // context.move_to(65.0, 65.0);
+                // context
+                //     .arc(60.0, 65.0, 5.0, 0.0, f64::consts::PI * 2.0)
+                //     .unwrap();
+
+                // // Draw the right eye.
+                // context.move_to(95.0, 65.0);
+                // context
+                //     .arc(90.0, 65.0, 5.0, 0.0, f64::consts::PI * 2.0)
+                //     .unwrap();
+
+                // context.stroke();
+
+                draw_cube(&context, (0.0, 0.0));
+                draw_cube(&context, (64.0, 32.0));
+                return false;
+            }
         };
 
         true
     }
+}
+
+fn draw_cube(context: &CanvasRenderingContext2d, upper_left: (f64, f64)) {
+    context.set_stroke_style(&JsValue::from_str("#000000ff"));
+    context.set_fill_style(&JsValue::from_str("#565656ff"));
+
+    // Top
+    context.set_fill_style(&JsValue::from_str("#565656ff"));
+    context.begin_path();
+    context.move_to(upper_left.0, upper_left.1 + 31.0);
+    context.line_to(upper_left.0 + 63.0, upper_left.1);
+    context.line_to(upper_left.0 + 64.0, upper_left.1);
+    context.line_to(upper_left.0 + 127.0, upper_left.1 + 31.0);
+    context.line_to(upper_left.0 + 127.0, upper_left.1 + 32.0);
+    context.line_to(upper_left.0 + 64.0, upper_left.1 + 63.0);
+    context.line_to(upper_left.0 + 63.0, upper_left.1 + 63.0);
+    context.line_to(upper_left.0 + 0.0, upper_left.1 + 32.0);
+    context.close_path();
+    context.fill();
+    context.stroke();
+
+    // Left
+    context.set_fill_style(&JsValue::from_str("#424242ff"));
+    context.begin_path();
+    context.move_to(upper_left.0, upper_left.1 + 32.0);
+    context.line_to(upper_left.0 + 63.0, upper_left.1 + 63.0);
+    context.line_to(upper_left.0 + 63.0, upper_left.1 + 131.0);
+    context.line_to(upper_left.0 + 0.0, upper_left.1 + 100.0);
+    context.close_path();
+    context.fill();
+    context.stroke();
+
+    // Right
+    context.set_fill_style(&JsValue::from_str("#888888ff"));
+    context.begin_path();
+    context.move_to(upper_left.0 + 127.0, upper_left.1 + 31.0);
+    context.line_to(upper_left.0 + 127.0, upper_left.1 + 100.0);
+    context.line_to(upper_left.0 + 64.0, upper_left.1 + 131.0);
+    context.line_to(upper_left.0 + 64.0, upper_left.1 + 63.0);
+    context.close_path();
+    context.fill();
+    context.stroke();
+
 }
