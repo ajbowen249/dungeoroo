@@ -11,6 +11,7 @@ use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, EventTarget, HtmlInputElement};
 use yew::prelude::*;
 
+#[derive(Clone, Copy)]
 pub enum Msg {
     None,
     Reset,
@@ -42,8 +43,13 @@ fn new_generator() -> DungeonGenerator {
     DungeonGenerator::new(15, 15)
 }
 
-const CANVAS_WIDTH: f64 = 1280.0;
-const CANVAS_HEIGHT: f64 = 394.0;
+const CANVAS_WIDTH: f64 = 1280.0 * 1.5;
+const CANVAS_HEIGHT: f64 = 394.0 * 3.0;
+
+const SHIFT_LEFT_MSG: Msg = Msg::AddRenderWindowOffset((-10.0, 0.0));
+const SHIFT_RIGHT_MSG: Msg = Msg::AddRenderWindowOffset((10.0, 0.0));
+const SHIFT_UP_MSG: Msg = Msg::AddRenderWindowOffset((0.0, -10.0));
+const SHIFT_DOWN_MSG: Msg = Msg::AddRenderWindowOffset((0.0, 10.0));
 
 impl Component for WFCDungeonSandbox {
     type Message = Msg;
@@ -92,10 +98,20 @@ impl Component for WFCDungeonSandbox {
             })
         };
 
-        let shift_left = ctx.link().callback(|_| Msg::AddRenderWindowOffset((-10.0, 0.0)));
-        let shift_right = ctx.link().callback(|_| Msg::AddRenderWindowOffset((10.0, 0.0)));
-        let shift_up = ctx.link().callback(|_| Msg::AddRenderWindowOffset((0.0, -10.0)));
-        let shift_down = ctx.link().callback(|_| Msg::AddRenderWindowOffset((0.0, 10.0)));
+        let shift_left = ctx.link().callback(|_| SHIFT_LEFT_MSG);
+        let shift_right = ctx.link().callback(|_| SHIFT_RIGHT_MSG);
+        let shift_up = ctx.link().callback(|_| SHIFT_UP_MSG);
+        let shift_down = ctx.link().callback(|_| SHIFT_DOWN_MSG);
+
+        let canvas_key_down = ctx.link().callback(|e: KeyboardEvent| {
+            match e.key().as_str() {
+                "a" => SHIFT_LEFT_MSG,
+                "d" => SHIFT_RIGHT_MSG,
+                "w" => SHIFT_UP_MSG,
+                "s" => SHIFT_DOWN_MSG,
+                _ => Msg::None
+            }
+        });
 
         let grid = &self.generator.wfc.get_grid().grid;
 
@@ -202,8 +218,13 @@ impl Component for WFCDungeonSandbox {
                     }
                     </div>
                 } else {
-                    <div class={classes!("wfc-ds-canvas-container")}>
-                        <canvas id={"canvas"} width={format!("{}px", CANVAS_WIDTH)} height={format!("{}px", CANVAS_HEIGHT)} class={classes!("wfc-ds-canvas")} />
+                    <div tabindex={1} onkeydown={canvas_key_down} class={classes!("wfc-ds-canvas-container")}>
+                        <canvas
+                            id={"canvas"}
+                            width={format!("{}px", CANVAS_WIDTH)}
+                            height={format!("{}px", CANVAS_HEIGHT)}
+                            class={classes!("wfc-ds-canvas")}
+                        />
                     </div>
                 }
             </div>

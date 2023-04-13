@@ -83,5 +83,10 @@ $basic-grid-margin: 2px;
 .wfc-ds-canvas-container {
 }
 
+.wfc-ds-canvas-container:focus-within {
+    border: 1px solid red;
+}
+
 .wfc-ds-canvas {
+    border: 1px solid black;
 }
