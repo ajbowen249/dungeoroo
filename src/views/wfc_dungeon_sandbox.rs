@@ -22,7 +22,10 @@ pub enum Msg {
     SeedInputChanged(u64),
     ToggleIsRenderedMode,
     RenderToCanvas,
+    AddRenderWindowOffset(Point2D),
 }
+
+type Point2D = (f64, f64);
 
 #[derive(PartialEq, Properties)]
 pub struct WFCSandboxProps {}
@@ -32,6 +35,7 @@ pub struct WFCDungeonSandbox {
     pub selected_set_cell_type: DungeonCellType,
     pub seed_string: String,
     pub is_rendered_mode: bool,
+    pub rendered_window_offset: Point2D,
 }
 
 fn new_generator() -> DungeonGenerator {
@@ -51,6 +55,7 @@ impl Component for WFCDungeonSandbox {
             selected_set_cell_type: DungeonCellType::None,
             seed_string: String::from(""),
             is_rendered_mode: true,
+            rendered_window_offset: (0.0, 0.0),
         };
 
         data.seed_string = data.generator.seed.to_string();
@@ -87,6 +92,11 @@ impl Component for WFCDungeonSandbox {
             })
         };
 
+        let shift_left = ctx.link().callback(|_| Msg::AddRenderWindowOffset((-10.0, 0.0)));
+        let shift_right = ctx.link().callback(|_| Msg::AddRenderWindowOffset((10.0, 0.0)));
+        let shift_up = ctx.link().callback(|_| Msg::AddRenderWindowOffset((0.0, -10.0)));
+        let shift_down = ctx.link().callback(|_| Msg::AddRenderWindowOffset((0.0, 10.0)));
+
         let grid = &self.generator.wfc.get_grid().grid;
 
         let cell_type_name = match self.selected_set_cell_type {
@@ -122,6 +132,14 @@ impl Component for WFCDungeonSandbox {
                     <input type={"number"} min={0} value={self.seed_string.clone()} oninput={seed_changed} />
                     <label for={"is_rendered_checkbox"}>{"Rendered"}</label>
                     <input type={"checkbox"} id={"is_rendered_checkbox"} checked={self.is_rendered_mode} onclick={toggle_rendered} />
+                    if self.is_rendered_mode {
+                        <div>
+                            <button onclick={shift_left}>{"<"}</button>
+                            <button onclick={shift_up}>{"^"}</button>
+                            <button onclick={shift_right}>{">"}</button>
+                            <button onclick={shift_down}>{"v"}</button>
+                        </div>
+                    }
                 </div>
                 if !self.is_rendered_mode {
                     <div class={classes!("wfc-ds-preview-grid")}>
@@ -247,80 +265,79 @@ impl Component for WFCDungeonSandbox {
                     .dyn_into::<web_sys::CanvasRenderingContext2d>()
                     .unwrap();
 
-                // context.begin_path();
+                self.clear_canvas(&context);
 
-                // // Draw the outer circle.
-                // context
-                //     .arc(75.0, 75.0, 50.0, 0.0, f64::consts::PI * 2.0)
-                //     .unwrap();
-
-                // // Draw the mouth.
-                // context.move_to(110.0, 75.0);
-                // context.arc(75.0, 75.0, 35.0, 0.0, f64::consts::PI).unwrap();
-
-                // // Draw the left eye.
-                // context.move_to(65.0, 65.0);
-                // context
-                //     .arc(60.0, 65.0, 5.0, 0.0, f64::consts::PI * 2.0)
-                //     .unwrap();
-
-                // // Draw the right eye.
-                // context.move_to(95.0, 65.0);
-                // context
-                //     .arc(90.0, 65.0, 5.0, 0.0, f64::consts::PI * 2.0)
-                //     .unwrap();
-
-                // context.stroke();
-
-                draw_cube(&context, (0.0, 0.0));
-                draw_cube(&context, (64.0, 32.0));
+                self.draw_cube(&context, &(0.0, 0.0));
+                self.draw_cube(&context, &(64.0, 32.0));
+                // We don't want the view to re-render, we just drew to the canvas
                 return false;
-            }
+            },
+            Msg::AddRenderWindowOffset(offset) => {
+                self.rendered_window_offset = (self.rendered_window_offset.0 + offset.0, self.rendered_window_offset.1 + offset.1);
+                ctx.link().callback(|_: ()| Msg::RenderToCanvas).emit(());
+                // We don't want the view to re-render, we want the canvas to re-render.
+                return false;
+            },
         };
 
         true
     }
 }
 
-fn draw_cube(context: &CanvasRenderingContext2d, upper_left: (f64, f64)) {
-    context.set_stroke_style(&JsValue::from_str("#000000ff"));
-    context.set_fill_style(&JsValue::from_str("#565656ff"));
+impl WFCDungeonSandbox {
+    fn point_to_canvas_point(&self, point: &Point2D) -> Point2D {
+        (point.0 - self.rendered_window_offset.0, point.1 - self.rendered_window_offset.1)
+    }
 
-    // Top
-    context.set_fill_style(&JsValue::from_str("#565656ff"));
-    context.begin_path();
-    context.move_to(upper_left.0, upper_left.1 + 31.0);
-    context.line_to(upper_left.0 + 63.0, upper_left.1);
-    context.line_to(upper_left.0 + 64.0, upper_left.1);
-    context.line_to(upper_left.0 + 127.0, upper_left.1 + 31.0);
-    context.line_to(upper_left.0 + 127.0, upper_left.1 + 32.0);
-    context.line_to(upper_left.0 + 64.0, upper_left.1 + 63.0);
-    context.line_to(upper_left.0 + 63.0, upper_left.1 + 63.0);
-    context.line_to(upper_left.0 + 0.0, upper_left.1 + 32.0);
-    context.close_path();
-    context.fill();
-    context.stroke();
+    fn clear_canvas(&self, context: &CanvasRenderingContext2d) {
+        context.clear_rect(0.0, 0.0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    }
 
-    // Left
-    context.set_fill_style(&JsValue::from_str("#424242ff"));
-    context.begin_path();
-    context.move_to(upper_left.0, upper_left.1 + 32.0);
-    context.line_to(upper_left.0 + 63.0, upper_left.1 + 63.0);
-    context.line_to(upper_left.0 + 63.0, upper_left.1 + 131.0);
-    context.line_to(upper_left.0 + 0.0, upper_left.1 + 100.0);
-    context.close_path();
-    context.fill();
-    context.stroke();
+    fn draw_cube(&self, context: &CanvasRenderingContext2d, upper_left: &Point2D) {
+        context.set_stroke_style(&JsValue::from_str("#000000ff"));
+        context.set_fill_style(&JsValue::from_str("#565656ff"));
+        let upper_left = self.point_to_canvas_point(upper_left);
 
-    // Right
-    context.set_fill_style(&JsValue::from_str("#888888ff"));
-    context.begin_path();
-    context.move_to(upper_left.0 + 127.0, upper_left.1 + 31.0);
-    context.line_to(upper_left.0 + 127.0, upper_left.1 + 100.0);
-    context.line_to(upper_left.0 + 64.0, upper_left.1 + 131.0);
-    context.line_to(upper_left.0 + 64.0, upper_left.1 + 63.0);
-    context.close_path();
-    context.fill();
-    context.stroke();
+        // Top
+        context.set_fill_style(&JsValue::from_str("#565656ff"));
+        context.begin_path();
+        context.move_to(upper_left.0, upper_left.1 + 31.0);
+        context.line_to(upper_left.0 + 63.0, upper_left.1);
+        context.line_to(upper_left.0 + 64.0, upper_left.1);
+        context.line_to(upper_left.0 + 127.0, upper_left.1 + 31.0);
+        context.line_to(upper_left.0 + 127.0, upper_left.1 + 32.0);
+        context.line_to(upper_left.0 + 64.0, upper_left.1 + 63.0);
+        context.line_to(upper_left.0 + 63.0, upper_left.1 + 63.0);
+        context.line_to(upper_left.0 + 0.0, upper_left.1 + 32.0);
+        context.close_path();
+        context.fill();
+        context.stroke();
 
+        // Left
+        context.set_fill_style(&JsValue::from_str("#424242ff"));
+        context.begin_path();
+        context.move_to(upper_left.0, upper_left.1 + 32.0);
+        context.line_to(upper_left.0 + 63.0, upper_left.1 + 63.0);
+        context.line_to(upper_left.0 + 63.0, upper_left.1 + 131.0);
+        context.line_to(upper_left.0 + 0.0, upper_left.1 + 100.0);
+        context.close_path();
+        context.fill();
+        context.stroke();
+
+        // Right
+        context.set_fill_style(&JsValue::from_str("#888888ff"));
+        context.begin_path();
+        context.move_to(upper_left.0 + 127.0, upper_left.1 + 31.0);
+        context.line_to(upper_left.0 + 127.0, upper_left.1 + 100.0);
+        context.line_to(upper_left.0 + 64.0, upper_left.1 + 131.0);
+        context.line_to(upper_left.0 + 64.0, upper_left.1 + 63.0);
+        context.close_path();
+        context.fill();
+        context.stroke();
+
+    }
+
+    fn draw_hex_cell_floor() {
+        
+    }
 }
