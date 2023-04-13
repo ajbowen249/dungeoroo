@@ -1,15 +1,15 @@
-use crate::components::dungeon_cell::*;
+use gloo_console::log;
+use gloo_timers::callback::Timeout;
+use std::f64;
+use wasm_bindgen::JsCast;
+use wasm_bindgen::prelude::*;
+use web_sys::{CanvasRenderingContext2d, EventTarget, HtmlInputElement};
+use yew::prelude::*;
+
+use crate::color::*;
 use crate::components::dungeon_cell_preview::*;
 use crate::generation_fields::dungeon::*;
 use crate::wfc::*;
-use gloo_console::log;
-use gloo_timers::callback::Timeout;
-use serde::{Deserialize, Serialize};
-use std::f64;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, EventTarget, HtmlInputElement};
-use yew::prelude::*;
 
 #[derive(Clone, Copy)]
 pub enum Msg {
@@ -288,8 +288,8 @@ impl Component for WFCDungeonSandbox {
 
                 self.clear_canvas(&context);
 
-                self.draw_cube(&context, &(0.0, 0.0));
-                self.draw_cube(&context, &(64.0, 32.0));
+                self.draw_cube(&context, &(0.0, 0.0), &"#888888".into());
+                self.draw_cube(&context, &(64.0, 32.0), &"#1010ff".into());
                 // We don't want the view to re-render, we just drew to the canvas
                 return false;
             },
@@ -314,13 +314,12 @@ impl WFCDungeonSandbox {
         context.clear_rect(0.0, 0.0, CANVAS_WIDTH, CANVAS_HEIGHT);
     }
 
-    fn draw_cube(&self, context: &CanvasRenderingContext2d, upper_left: &Point2D) {
+    fn draw_cube(&self, context: &CanvasRenderingContext2d, upper_left: &Point2D, color: &Color) {
         context.set_stroke_style(&JsValue::from_str("#000000ff"));
-        context.set_fill_style(&JsValue::from_str("#565656ff"));
         let upper_left = self.point_to_canvas_point(upper_left);
 
         // Top
-        context.set_fill_style(&JsValue::from_str("#565656ff"));
+        context.set_fill_style(&JsValue::from_str(color.brightness(0.7).to_string().as_str()));
         context.begin_path();
         context.move_to(upper_left.0, upper_left.1 + 31.0);
         context.line_to(upper_left.0 + 63.0, upper_left.1);
@@ -335,7 +334,7 @@ impl WFCDungeonSandbox {
         context.stroke();
 
         // Left
-        context.set_fill_style(&JsValue::from_str("#424242ff"));
+        context.set_fill_style(&JsValue::from_str(color.brightness(0.5).to_string().as_str()));
         context.begin_path();
         context.move_to(upper_left.0, upper_left.1 + 32.0);
         context.line_to(upper_left.0 + 63.0, upper_left.1 + 63.0);
@@ -346,7 +345,7 @@ impl WFCDungeonSandbox {
         context.stroke();
 
         // Right
-        context.set_fill_style(&JsValue::from_str("#888888ff"));
+        context.set_fill_style(&JsValue::from_str(color.to_string().as_str()));
         context.begin_path();
         context.move_to(upper_left.0 + 127.0, upper_left.1 + 31.0);
         context.line_to(upper_left.0 + 127.0, upper_left.1 + 100.0);

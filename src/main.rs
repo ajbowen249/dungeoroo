@@ -1,6 +1,7 @@
 use yew_router::prelude::*;
 use yew::prelude::*;
 
+mod color;
 mod components;
 mod context;
 mod generation_fields;
